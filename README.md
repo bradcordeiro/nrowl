@@ -1,88 +1,114 @@
-# node-prowl - Prowl for Node.js API
-
-Be happy! Send push notifications to iDevices (iPad, iPhone etc) that
-has the [Prowl iPhone app](http://www.prowlapp.com/) installed. Simple,
-easy and clean.
-
-As of now this API supports push and only push.
+# nrowl - Prowl for Node.js API
+Send push notifications using the [Prowl](http://www.prowlapp.com/) service.
 
 ## Installation
 
-	npm install node-prowl
-
-or put it in your package.json as usual and hit npm install. It depends
-on xml2js and request.
+```shell
+	npm install nrowl
+```
 
 ## Usage
 
-The API requires your API-key, which could be found or created on the
-"API Keys" tab on the [Prowl website](http://www.prowlapp.com/).
-
-Initialize it with your key and start pushing!
+The API requires your API Key, which you can generate by [creating a Prowl account](https://www.prowlapp.com/register.php) and visiting your [API Keys page](https://www.prowlapp.com/api_settings.php).
 
 ```javascript
-var Prowl = require('node-prowl');
+const Prowl = require('nrowl');
 
-var prowl = new Prowl('MY-API-KEY');
+Prowl.add(YOUR_API_KEY, 'Push Notifier', { description: 'So easy to use!' });
+
+Prowl.add(YOUR_API_KEY, 'Push Notifier', { 
+  event: 'Some event',
+  description: 'So easy to use!',
+  providerkey: YOUR_PROVIDER_KEY,
+  priority: 2,
+  url: 'http://www.prowlapp.com/',
+}
 ```
 
-Now, use the prowl object whenever sending a push:
+## API
+
+### Functions
+All functions are static (you don't need to call `new` to instantiate an instance).
+
+#### add()
 
 ```javascript
-prowl.push('YO, this is awesomez!', 'My app', function( err, remaining ){
-	if( err ) throw err;
-	console.log( 'I have ' + remaining + ' calls to the api during current hour. BOOM!' );
-});
+Prowl.add(apikey, application, options)
 ```
+* **apikey** (String): The Prowl API key, or an array of keys, to send the notification to.
+* **application** (String): The name of your application, which appears as part of the notification.
+* **options** (Object): Any other parameters available from the [Prowl API](https://www.prowlapp.com/api.php#add). Per Prowl's requirements, this must include either `event` or `description` or both.
 
-You can provide more [options](http://www.prowlapp.com/api.php#add) to the PUSH notification:
+Sends a push notification to the supplied API key(s).
+
+Returns a Promise that resolves on a successful push ore rejects on failure with an object in the generic format (see Generic Return Objects below).
+
+#### verify()
+
+Verify that a Prowl API Key is valid. This uses the Prowl API and counts against your usage limits.
 
 ```javascript
-prowl.push('YO, this is awesomez!', 'My app', {
-	providerkey: 'my-provider-key',
-	priority: 2,
-	url: 'http://revrise.com'
-}, function( err, remaining ){
-	if( err ) throw err;
-	console.log( 'I have ' + remaining + ' calls to the api during current hour. BOOM!' );
-});
+Prowl.verify(apikey, providerkey);
 ```
+
+* **apikey** (String): the API key to check.
+* **providerkey** (String): Your provider key, if you have one. This is optional.
+
+Returns a Promise that resolves when the API key is valid or rejects when the API key is invalid (see Generic Return Objects below).
+
+#### retrieveToken(providerkey)
+
+Fetch a registration token for use with `retrieveAPIKey()`.
+
+```javascript
+Prowl.retrieveToken(providerkey)
+```
+
+* **providerkey** (String): Your Provider Key.
+
+Returns a Promise that resolves with a generic success object (see Generic Return Objects below) with two additional properties:
+
+* **token** (String): a registration token, required when getting an API key using `retrieveAPIKey()`.
+* **url** (String): a URL to a confirmation page the user must complete to be issued an API key.
+
+#### retrieveAPIKey()
+
+Fetch an API key for a user.
+
+```javascript
+Prowl.retrieveAPIKey(providerkey, token);
+```
+
+* **providerkey** (String): Your Provider Key.
+* **token** (String): A token returned from `retrieveToken()`.
+
+Returns a Promise that resolves with a generic success object (see Generic Return Objects below) with an additional property:
+
+* **apikey** (String): The user's new API key.
+
+### Generic Return Objects
+
+Prowl API responses follow a generic format for both success and failure of API calls.
+
+On success:
+* **code** (Number): HTTP status code; will be 200 on a successful call
+* **remaining** (Number): A count of remaining available API calls.
+* **resetdate** (Date): Time remaining before your available API calls reset.
+
+On failure:
+* **code** (Number): HTTP statis code; see the [Prowl API Documentation](https://www.prowlapp.com/api.php#return) for a specific list of codes.
+* **message** (String): A human readable error message.
 
 ## Contribute
 
-I´d be happy if you wanted to contribute with pull requests or tips.
-I´ll add you to the contributors list here and in the package.json file.
+I'm happy to accept contributions. ESLint is included as a dev dependency to conform to the [Airbnb Style Guide](https://github.com/airbnb/javascript).
 
 ## Testing
 
-While contributing, make sure to write a test and make it pass if you
-extend the library. Tests are written in the test directory, preferably
-in all.js, since its quite small right now. It uses should.js and mocha
-for tests.
-
-Test by installing mocha and should.js (dev dependencies) and then just
-hit:
-
-	PROWL_KEY=[my key here] make
-
-And voila, it autotests for you.
-
-Happily written during a four hour hack in my
-[apt](http://starksignal.se/wp-content/uploads/2012/01/office-chamonix.jpg) in Chamonix, France.
+[Mocha](https://mochajs.org/) is used as the test runner, [Chai](https://www.chaijs.com/) for its assertions, and [Nock](https://github.com/nock/nock) to simulate responses from the Prowl API.
 
 ## Changelog
 
-### 2014-08-31
+### 2019-08-31
 
-* [paton](https://github.com/paton) contributes with callback fix
-
-### 2013-05-03
-
-* [mrose17](https://github.com/mrose17) contributes with error handling fix
-
-### 2013-02-15 - version 0.1.6
-
-* [Jellyfrog](https://github.com/Jellyfrog) contributes with fixes
-parameter bugs.
-* Better error handling solving [Issue
-1](https://github.com/arnklint/node-prowl/issues/1)
+* Initial release. Initially forked from [node-prowl](https://github.com/arnklint/node-prowl) but I ended up rewriting everything in ES2105.
