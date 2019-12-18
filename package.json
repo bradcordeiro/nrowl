@@ -29,10 +29,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/arnklint/node-prowl.git"
+    "url": "https://github.com/bradcordeiro/nrowl.git"
   },
   "bugs": {
-    "url": "https://github.com/arnklint/node-prowl/issues"
+    "url": "https://github.com/bradcordeiro/nrowl/issues"
   },
   "main": "./dist"
 }
