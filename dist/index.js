@@ -11,13 +11,15 @@ const querystring = require('querystring');
 
 const xml2js = require('xml2js');
 
-const endpointBase = 'https://api.prowlapp.com/publicapi/';
-
 function prowlRequest(endpoint, params, method) {
   const formattedParams = querystring.encode(params);
-  const APIrequest = request(`${endpointBase}/${endpoint}?${formattedParams}`, method);
+  const options = {
+    host: 'api.prowlapp.com',
+    path: `/publicapi/${endpoint}?${formattedParams}`,
+    method
+  };
   return new Promise((resolve, reject) => {
-    APIrequest.on('response', response => {
+    const APIrequest = request(options, response => {
       response.setEncoding('utf-8');
       let xml = '';
       response.on('data', chunk => {
@@ -35,66 +37,152 @@ function prowlRequest(endpoint, params, method) {
   });
 }
 
-function send(apikey, application, options) {
-  if (!options.event && !options.description) {
-    throw new Error('options.event or options.description is required.');
-  }
-
-  const parameters = {};
-  parameters.apikey = Array.isArray(apikey) ? apikey.join(',') : apikey;
-  Object.assign(parameters, options);
-  Object.assign(parameters, {
-    application
-  });
-  return prowlRequest('add', parameters, 'POST');
+function transformSuccessResponse(response) {
+  return {
+    code: parseInt(response.success.code, 10),
+    remaining: parseInt(response.success.remaining, 10),
+    resetdate: new Date(parseInt(response.success.resetdate, 10))
+  };
 }
 
-function isKeyValid(_x, _x2) {
-  return _isKeyValid.apply(this, arguments);
+function transformErrorResponse(response) {
+  return {
+    code: parseInt(response.error.code, 10),
+    message: response.error._
+  };
 }
 
-function _isKeyValid() {
-  _isKeyValid = _asyncToGenerator(function* (apikey, providerkey) {
-    let result;
+function add(_x, _x2, _x3) {
+  return _add.apply(this, arguments);
+}
 
-    if (Array.isArray(apikey)) {
-      return Promise.all(apikey.map(key => isKeyValid(key, providerkey)));
+function _add() {
+  _add = _asyncToGenerator(function* (apikey, application, options) {
+    if (!options.event && !options.description) {
+      throw new Error('options.event or options.description is required.');
     }
 
+    const parameters = {};
+    parameters.apikey = Array.isArray(apikey) ? apikey.join(',') : apikey;
+    Object.assign(parameters, options);
+    Object.assign(parameters, {
+      application
+    });
+    const response = yield prowlRequest('add', parameters, 'POST');
+
+    if (response.error) {
+      throw transformErrorResponse(response);
+    }
+
+    return transformSuccessResponse(response);
+  });
+  return _add.apply(this, arguments);
+}
+
+function verify(_x4, _x5) {
+  return _verify.apply(this, arguments);
+}
+
+function _verify() {
+  _verify = _asyncToGenerator(function* (apikey, providerkey) {
+    let response;
+
     if (providerkey) {
-      result = yield prowlRequest('verify', {
+      response = yield prowlRequest('verify', {
         apikey,
         providerkey
       }, 'GET');
     }
 
-    result = yield prowlRequest('verify', {
+    response = yield prowlRequest('verify', {
       apikey
     }, 'GET');
-    return result.success !== undefined;
+
+    if (response.success) {
+      return transformSuccessResponse(response);
+    }
+
+    throw transformErrorResponse(response);
+  });
+  return _verify.apply(this, arguments);
+}
+
+function retrieveToken(_x6) {
+  return _retrieveToken.apply(this, arguments);
+}
+
+function _retrieveToken() {
+  _retrieveToken = _asyncToGenerator(function* (providerkey) {
+    const response = yield prowlRequest('retrieve/token', {
+      providerkey
+    }, 'GET');
+
+    if (response.error) {
+      throw transformErrorResponse(response);
+    }
+
+    const success = transformSuccessResponse(response);
+    Object.assign(success, response.retrieve);
+    return success;
+  });
+  return _retrieveToken.apply(this, arguments);
+}
+
+function retrieveAPIKey(_x7, _x8) {
+  return _retrieveAPIKey.apply(this, arguments);
+}
+
+function _retrieveAPIKey() {
+  _retrieveAPIKey = _asyncToGenerator(function* (providerkey, token) {
+    const response = yield prowlRequest('retrieve/apikey', {
+      providerkey,
+      token
+    }, 'GET');
+
+    if (response.error) {
+      throw transformErrorResponse(response);
+    }
+
+    const success = transformSuccessResponse(response);
+    Object.assign(success, response.retrieve);
+    return success;
+  });
+  return _retrieveAPIKey.apply(this, arguments);
+}
+
+function isKeyValid(_x9, _x10) {
+  return _isKeyValid.apply(this, arguments);
+}
+
+function _isKeyValid() {
+  _isKeyValid = _asyncToGenerator(function* (apikey, providerkey) {
+    if (Array.isArray(apikey)) {
+      return Promise.all(apikey.map(key => isKeyValid(key, providerkey)));
+    }
+
+    let result;
+
+    try {
+      if (providerkey) {
+        result = yield verify(apikey, providerkey);
+      }
+
+      result = yield verify(apikey);
+    } catch (_) {
+      return false;
+    }
+
+    return result.code === 200;
   });
   return _isKeyValid.apply(this, arguments);
 }
 
 const areKeysValid = isKeyValid;
-
-function retrieveToken(providerkey) {
-  return prowlRequest('retrieve/token', {
-    providerkey
-  }, 'GET');
-}
-
-function retrieveAPIKey(providerkey, token) {
-  return prowlRequest('retrieve/apikey', {
-    providerkey,
-    token
-  }, 'GET');
-}
-
 module.exports = {
-  send,
-  isKeyValid,
-  areKeysValid,
+  add,
+  verify,
   retrieveToken,
-  retrieveAPIKey
+  retrieveAPIKey,
+  isKeyValid,
+  areKeysValid
 };

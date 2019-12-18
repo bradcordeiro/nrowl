@@ -28,7 +28,22 @@ function prowlRequest(endpoint, params, method) {
   });
 }
 
-function send(apikey, application, options) {
+function transformSuccessResponse(response) {
+  return {
+    code: parseInt(response.success.code, 10),
+    remaining: parseInt(response.success.remaining, 10),
+    resetdate: new Date(parseInt(response.success.resetdate, 10)),
+  };
+}
+
+function transformErrorResponse(response) {
+  return {
+    code: parseInt(response.error.code, 10),
+    message: response.error._,
+  };
+}
+
+async function add(apikey, application, options) {
   if (!options.event && !options.description) {
     throw new Error('options.event or options.description is required.');
   }
@@ -39,23 +54,55 @@ function send(apikey, application, options) {
   Object.assign(parameters, options);
   Object.assign(parameters, { application });
 
-  return prowlRequest('add', parameters, 'POST');
-}
+  const response = await prowlRequest('add', parameters, 'POST');
 
-function verify(apikey, providerkey) {
-  if (providerkey) {
-    return prowlRequest('verify', { apikey, providerkey }, 'GET');
+  if (response.error) {
+    throw transformErrorResponse(response);
   }
 
-  return prowlRequest('verify', { apikey }, 'GET');
+  return transformSuccessResponse(response);
 }
 
-function retrieveToken(providerkey) {
-  return prowlRequest('retrieve/token', { providerkey }, 'GET');
+async function verify(apikey, providerkey) {
+  let response;
+
+  if (providerkey) {
+    response = await prowlRequest('verify', { apikey, providerkey }, 'GET');
+  }
+
+  response = await prowlRequest('verify', { apikey }, 'GET');
+
+  if (response.success) {
+    return transformSuccessResponse(response);
+  }
+
+  throw transformErrorResponse(response);
 }
 
-function retrieveAPIKey(providerkey, token) {
-  return prowlRequest('retrieve/apikey', { providerkey, token }, 'GET');
+async function retrieveToken(providerkey) {
+  const response = await prowlRequest('retrieve/token', { providerkey }, 'GET');
+
+  if (response.error) {
+    throw transformErrorResponse(response);
+  }
+
+  const success = transformSuccessResponse(response);
+  Object.assign(success, response.retrieve);
+
+  return success;
+}
+
+async function retrieveAPIKey(providerkey, token) {
+  const response = await prowlRequest('retrieve/apikey', { providerkey, token }, 'GET');
+
+  if (response.error) {
+    throw transformErrorResponse(response);
+  }
+
+  const success = transformSuccessResponse(response);
+  Object.assign(success, response.retrieve);
+
+  return success;
 }
 
 async function isKeyValid(apikey, providerkey) {
@@ -65,18 +112,22 @@ async function isKeyValid(apikey, providerkey) {
 
   let result;
 
-  if (providerkey) {
-    result = await verify(apikey, providerkey);
+  try {
+    if (providerkey) {
+      result = await verify(apikey, providerkey);
+    }
+
+    result = await verify(apikey);
+  } catch (_) {
+    return false;
   }
 
-  result = await verify(apikey);
-
-  return result.success !== undefined;
+  return result.code === 200;
 }
 const areKeysValid = isKeyValid;
 
 module.exports = {
-  send,
+  add,
   verify,
   retrieveToken,
   retrieveAPIKey,
