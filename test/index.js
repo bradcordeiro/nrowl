@@ -77,7 +77,10 @@ describe('retrieveAPIKey()', () => {
       })
       .reply(401, Fixtures.retrieveKey.ValidResponse);
 
-    return Prowl.retrieveAPIKey(Fixtures.retrieveKey.ValidProviderKey, Fixtures.retrieveKey.ValidToken)
+    return Prowl.retrieveAPIKey(
+      Fixtures.retrieveKey.ValidProviderKey,
+      Fixtures.retrieveKey.ValidToken,
+    )
       .then((response) => {
         expect(typeof response).to.equal('object');
         expect(response).to.deep.equal(Fixtures.retrieveKey.ValidResponseJSON);
