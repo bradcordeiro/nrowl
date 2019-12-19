@@ -102,11 +102,7 @@ On success:
 On failure:
 ```javascript
 {
-<<<<<<< HEAD
   code: 401 //  HTTP status code; see the [Prowl API Documentation](https://www.prowlapp.com/api.php#return) for a list of codes.
-=======
-  code: 401 //  HTTP statis code; see the [Prowl API Documentation](https://www.prowlapp.com/api.php#return) for a list of codes.
->>>>>>> 6df4d9e6b76e778af45915c5a5a25726a27ecce5
   message: 'Invalid API key' // Human-readable error message.
 }
 ```
