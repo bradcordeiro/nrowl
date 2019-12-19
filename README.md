@@ -91,13 +91,21 @@ Returns a Promise that resolves with a generic success object (see Generic Retur
 Prowl API responses follow a generic format for both success and failure of API calls.
 
 On success:
-* **code** (Number): HTTP status code; will be 200 on a successful call
-* **remaining** (Number): A count of remaining available API calls.
-* **resetdate** (Date): Time remaining before your available API calls reset.
+```javascript
+{
+  code: 200, // HTTP status code; will be 200 on a successful call
+  remaining: 999, // Count of remaining available API calls.
+  resetdate: Wed Dec 18 2019 18:35:16 GMT-0800 (Pacific Standard Time) // (Date object) Time when your available API calls reset.
+}
+```
 
 On failure:
-* **code** (Number): HTTP statis code; see the [Prowl API Documentation](https://www.prowlapp.com/api.php#return) for a specific list of codes.
-* **message** (String): A human readable error message.
+```javascript
+{
+  code: 401 //  HTTP status code; see the [Prowl API Documentation](https://www.prowlapp.com/api.php#return) for a list of codes.
+  message: 'Invalid API key' // Human-readable error message.
+}
+```
 
 ## Contribute
 
