@@ -1,7 +1,7 @@
 {
   "name": "nrowl",
   "description": "Node.js API for Prowl",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "eslintConfig": {
     "extends": "airbnb-base"
   },
